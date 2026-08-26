@@ -28,9 +28,10 @@ jobs:
         os:                 ['windows:strawberry']
         perl:               ['5.42']
     steps:
-      - name: Checkout code
+      - name: Checkout RegressNpp Repo
         uses: actions/checkout@v7
-      - name: Set up perl ${{ matrix.perl }} ${{ matrix.os }} ${{ matrix.joblabel }}
+
+      - name: Perl: Set up ${{ matrix.perl }} ${{ matrix.os }} ${{ matrix.joblabel }}
         uses: shogo82148/actions-setup-perl@v1
         with:
           perl-version: ${{ matrix.perl }}
@@ -38,7 +39,8 @@ jobs:
           distribution: ${{ ( endsWith(matrix.os, ':strawberry') && 'strawberry' ) || 'default' }}
           install-modules-with: cpanm
           install-modules-args: --with-develop --with-configure
-      - name: restore-cache
+
+      - name: Perl: restore-cache
         id: perl-cache-restore
         uses: actions/cache/restore@v6
         with:
@@ -47,16 +49,17 @@ jobs:
                 C:\hostedtoolcache\windows\perl
             key: ${{ matrix.os }}-${{ matrix.perl }}
 
-      - name: Checkout N++
+      - name: Checkout N++ Repo
         uses: actions/checkout@v7
         with:
             repository: 'notepad-plus-plus/notepad-plus-plus'
+            path: notepad-plus-plus
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v3
 
       - name: MSBuild of n++ exe
-        working-directory: PowerEditor\visual.net\
+        working-directory: notepad-plus-plus\PowerEditor\visual.net\
         run: msbuild notepadPlus.sln /m /p:configuration="Release" /p:platform="x64"
 
       - name: Add n++ to PATH
@@ -77,24 +80,8 @@ jobs:
 
       - name: Install W32MNPP
         run: |
-            cpanm --notest Win32::Mechanize::NotepadPlusPlus
-      # - name: Pre-Makefile.PL prereqs
-      #   run: |
-      #       Write-Host "`n--------------------`nExtUtils::MakeMaker:"
-      #       cpanm ExtUtils::MakeMaker@7.76
-      #       Write-Host "`n--------------------`HTTP::Tiny:"
-      #       cpanm HTTP::Tiny~0.055
-      #       # these seem to have difficulty getting automatically installed as preqreqs in earlier perl versions, so might manually do them if I start supporting older perls again
-      #       # cpanm Config::Perl::V Encode::compat Math::Int64
-      # - name: Run Makefile.PL and get prereqs
-      #   run: |
-      #       Write-Host "`n--------------------`n# initially grab the prereqs for Makefile.PL"
-      #       cpanm --notest File::Which File::Spec File::Fetch Archive::Extract Archive::Zip
-      #       Write-Host "`n--------------------`n# intial run of Makefile.PL to see missing dependencies"
-      #       perl Makefile.PL
-      #       cpanm --notest --installdeps .
-      #       Write-Host "`n--------------------`n# re-run Makefile.PL after dependencies met"
-      #       perl Makefile.PL
+            cpanm Win32::Mechanize::NotepadPlusPlus
+
       - name: save-cache
         id: perl-cache-save
         uses: actions/cache/save@v6
@@ -103,6 +90,9 @@ jobs:
                 c:\hostedtoolcache\windows\strawberry-perl
                 C:\hostedtoolcache\windows\perl
             key: ${{ steps.perl-cache-restore.outputs.cache-primary-key }}
+
       - name: Run the perl-based tests ${{ env.VERBOSE_TESTING }}
         run: |
+          Resolve-Path "."
+          dir
           prove ${{ env.VERBOSE_TESTING }} -l t
