@@ -31,24 +31,6 @@ jobs:
       - name: Checkout RegressNpp Repo
         uses: actions/checkout@v7
 
-      - name: Perl - Set up ${{ matrix.perl }} ${{ matrix.os }} ${{ matrix.joblabel }}
-        uses: shogo82148/actions-setup-perl@v1
-        with:
-          perl-version: ${{ matrix.perl }}
-          multi-thread: ${{ ( ( startsWith(matrix.os, 'windows') || endsWith(matrix.os, ':thr') ) && true ) || false }}
-          distribution: ${{ ( endsWith(matrix.os, ':strawberry') && 'strawberry' ) || 'default' }}
-          install-modules-with: cpanm
-          install-modules-args: --with-develop --with-configure
-
-      - name: Perl - restore-cache
-        id: perl-cache-restore
-        uses: actions/cache/restore@v6
-        with:
-            path: |
-                c:\hostedtoolcache\windows\strawberry-perl
-                C:\hostedtoolcache\windows\perl
-            key: ${{ matrix.os }}-${{ matrix.perl }}
-
       - name: Checkout N++ Repo
         uses: actions/checkout@v7
         with:
@@ -57,6 +39,26 @@ jobs:
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v3
+
+      - name: Set up Perl ${{ matrix.perl }} ${{ matrix.os }} ${{ matrix.joblabel }}
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: ${{ matrix.perl }}
+          multi-thread: ${{ ( ( startsWith(matrix.os, 'windows') || endsWith(matrix.os, ':thr') ) && true ) || false }}
+          distribution: ${{ ( endsWith(matrix.os, ':strawberry') && 'strawberry' ) || 'default' }}
+          install-modules-with: cpanm
+          install-modules-args: --with-develop --with-configure
+          install-modules: FindBin
+
+      - name: restore-cache
+        id: perl-cache-restore
+        uses: actions/cache/restore@v6
+        with:
+            path: |
+                c:\hostedtoolcache\windows\strawberry-perl
+                C:\hostedtoolcache\windows\perl
+                ${{ github.workspace}}\notepad-plus-plus\PowerEditor\visual.net\x64
+            key: ${{ matrix.os }}-${{ matrix.perl }}
 
       - name: MSBuild of n++ exe
         working-directory: notepad-plus-plus\PowerEditor\visual.net\
@@ -89,10 +91,8 @@ jobs:
             path: |
                 c:\hostedtoolcache\windows\strawberry-perl
                 C:\hostedtoolcache\windows\perl
+                ${{ github.workspace}}\notepad-plus-plus\PowerEditor\visual.net\x64
             key: ${{ steps.perl-cache-restore.outputs.cache-primary-key }}
 
       - name: Run the perl-based tests ${{ env.VERBOSE_TESTING }}
-        run: |
-          Resolve-Path "."
-          dir
-          prove ${{ env.VERBOSE_TESTING }} -l t
+        run: prove ${{ env.VERBOSE_TESTING }} -l t
