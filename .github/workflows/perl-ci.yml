@@ -31,7 +31,7 @@ jobs:
       - name: Checkout RegressNpp Repo
         uses: actions/checkout@v7
 
-      - name: Perl: Set up ${{ matrix.perl }} ${{ matrix.os }} ${{ matrix.joblabel }}
+      - name: Perl - Set up ${{ matrix.perl }} ${{ matrix.os }} ${{ matrix.joblabel }}
         uses: shogo82148/actions-setup-perl@v1
         with:
           perl-version: ${{ matrix.perl }}
@@ -40,7 +40,7 @@ jobs:
           install-modules-with: cpanm
           install-modules-args: --with-develop --with-configure
 
-      - name: Perl: restore-cache
+      - name: Perl - restore-cache
         id: perl-cache-restore
         uses: actions/cache/restore@v6
         with:
