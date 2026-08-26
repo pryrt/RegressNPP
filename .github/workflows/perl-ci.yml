@@ -1,0 +1,87 @@
+# This is a basic workflow to help you get started with Actions
+# use https://github.com/pryrt/Win32-Mechanize-NotepadPlusPlus/blob/main/.github/workflows/perl-ci.yml as reference
+
+name: perl-ci
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on all pushes to branches, and pull request for the main branch
+  push:
+    branches:
+
+  ## pull_request:
+  ##   branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  test:
+    name: Test With Perl ${{ matrix.perl }} ${{ matrix.os }} ${{ matrix.joblabel }}
+    runs-on: ${{ ( ( startsWith(matrix.os, 'ubuntu:') && 'ubuntu-latest' ) || ( startsWith(matrix.os, 'macos:') && 'macos-latest' ) || startsWith(matrix.os, 'windows') && 'windows-latest' ) || matrix.os }}
+    env:
+      AUTOMATED_CI_TESTING: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        os:                 ['windows:strawberry']
+        perl:               ['5.42']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Set up perl ${{ matrix.perl }} ${{ matrix.os }} ${{ matrix.joblabel }}
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: ${{ matrix.perl }}
+          multi-thread: ${{ ( ( startsWith(matrix.os, 'windows') || endsWith(matrix.os, ':thr') ) && true ) || false }}
+          distribution: ${{ ( endsWith(matrix.os, ':strawberry') && 'strawberry' ) || 'default' }}
+          install-modules-with: cpanm
+          install-modules-args: --with-develop --with-configure
+      - name: restore-cache
+        id: perl-cache-restore
+        uses: actions/cache/restore@v6
+        with:
+            path: |
+                c:\hostedtoolcache\windows\strawberry-perl
+                C:\hostedtoolcache\windows\perl
+            key: ${{ matrix.os }}-${{ matrix.perl }}
+      - name: Find binaries expecting  ${{ matrix.perl }} ${{ matrix.os }} ${{ matrix.joblabel }}
+        run: |
+            Write-Host "`n====================`nFinding perl.exe"
+            ${{ ( startsWith(matrix.os, 'windows') && '(get-command perl).Path'  ) || 'which perl' }}
+            perl -v
+            Write-Host "`n--------------------`nFinding cpanm.bat"
+            ${{ ( startsWith(matrix.os, 'windows') && '(get-command cpanm).Path' ) || 'which cpanm' }}
+            cpanm --version
+      - name: Pre-Makefile.PL prereqs
+        run: |
+            Write-Host "`n--------------------`nExtUtils::MakeMaker:"
+            cpanm ExtUtils::MakeMaker@7.76
+            Write-Host "`n--------------------`HTTP::Tiny:"
+            cpanm HTTP::Tiny~0.055
+            # these seem to have difficulty getting automatically installed as preqreqs in earlier perl versions, so might manually do them if I start supporting older perls again
+            # cpanm Config::Perl::V Encode::compat Math::Int64
+      - name: Run Makefile.PL and get prereqs
+        run: |
+            Write-Host "`n--------------------`n# initially grab the prereqs for Makefile.PL"
+            cpanm --notest File::Which File::Spec File::Fetch Archive::Extract Archive::Zip
+            Write-Host "`n--------------------`n# intial run of Makefile.PL to see missing dependencies"
+            perl Makefile.PL
+            cpanm --notest --installdeps .
+            Write-Host "`n--------------------`n# re-run Makefile.PL after dependencies met"
+            perl Makefile.PL
+      - name: save-cache
+        id: perl-cache-save
+        uses: actions/cache/save@v6
+        with:
+            path: |
+                c:\hostedtoolcache\windows\strawberry-perl
+                C:\hostedtoolcache\windows\perl
+            key: ${{ steps.perl-cache-restore.outputs.cache-primary-key }}
+      - name: normal prove
+        run: |
+          prove -l t
+      #- name: verbose prove (for debug)
+      #  run: |
+      #      prove -vl t
