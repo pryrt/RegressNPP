@@ -64,7 +64,7 @@ jobs:
 
       - name: Add n++ to PATH
         run: |
-            $AbsolutePath = Resolve-Path ".\PowerEditor\bin64"
+            $AbsolutePath = Resolve-Path ".\notepad-plus-plus\PowerEditor\bin64"
             echo $AbsolutePath >> $env:GITHUB_PATH
 
       - name: Find binaries expecting  ${{ matrix.perl }} ${{ matrix.os }} ${{ matrix.joblabel }}
