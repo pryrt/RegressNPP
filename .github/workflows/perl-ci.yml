@@ -21,7 +21,7 @@ jobs:
     name: Test With Perl ${{ matrix.perl }} ${{ matrix.os }} ${{ matrix.joblabel }}
     runs-on: ${{ ( ( startsWith(matrix.os, 'ubuntu:') && 'ubuntu-latest' ) || ( startsWith(matrix.os, 'macos:') && 'macos-latest' ) || startsWith(matrix.os, 'windows') && 'windows-latest' ) || matrix.os }}
     env:
-      AUTOMATED_CI_TESTING: 1
+      VERBOSE_TESTING: '-v' # '-v' or ''
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +46,24 @@ jobs:
                 c:\hostedtoolcache\windows\strawberry-perl
                 C:\hostedtoolcache\windows\perl
             key: ${{ matrix.os }}-${{ matrix.perl }}
+
+      - name: Checkout N++
+        uses: actions/checkout@v7
+        with:
+            repository: 'notepad-plus-plus/notepad-plus-plus'
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v3
+
+      - name: MSBuild of n++ exe
+        working-directory: PowerEditor\visual.net\
+        run: msbuild notepadPlus.sln /m /p:configuration="Release" /p:platform="x64"
+
+      - name: Add n++ to PATH
+        run: |
+            $AbsolutePath = Resolve-Path ".\PowerEditor\bin64"
+            echo $AbsolutePath >> $env:GITHUB_PATH
+
       - name: Find binaries expecting  ${{ matrix.perl }} ${{ matrix.os }} ${{ matrix.joblabel }}
         run: |
             Write-Host "`n====================`nFinding perl.exe"
@@ -54,23 +72,29 @@ jobs:
             Write-Host "`n--------------------`nFinding cpanm.bat"
             ${{ ( startsWith(matrix.os, 'windows') && '(get-command cpanm).Path' ) || 'which cpanm' }}
             cpanm --version
-      - name: Pre-Makefile.PL prereqs
+            Write-Host "`n--------------------`nFinding notepad++"
+            ${{ ( startsWith(matrix.os, 'windows') && '(get-command notepad++).Path' ) || 'which notepad++' }}
+
+      - name: Install W32MNPP
         run: |
-            Write-Host "`n--------------------`nExtUtils::MakeMaker:"
-            cpanm ExtUtils::MakeMaker@7.76
-            Write-Host "`n--------------------`HTTP::Tiny:"
-            cpanm HTTP::Tiny~0.055
-            # these seem to have difficulty getting automatically installed as preqreqs in earlier perl versions, so might manually do them if I start supporting older perls again
-            # cpanm Config::Perl::V Encode::compat Math::Int64
-      - name: Run Makefile.PL and get prereqs
-        run: |
-            Write-Host "`n--------------------`n# initially grab the prereqs for Makefile.PL"
-            cpanm --notest File::Which File::Spec File::Fetch Archive::Extract Archive::Zip
-            Write-Host "`n--------------------`n# intial run of Makefile.PL to see missing dependencies"
-            perl Makefile.PL
-            cpanm --notest --installdeps .
-            Write-Host "`n--------------------`n# re-run Makefile.PL after dependencies met"
-            perl Makefile.PL
+            cpanm --notest Win32::Mechanize::NotepadPlusPlus
+      # - name: Pre-Makefile.PL prereqs
+      #   run: |
+      #       Write-Host "`n--------------------`nExtUtils::MakeMaker:"
+      #       cpanm ExtUtils::MakeMaker@7.76
+      #       Write-Host "`n--------------------`HTTP::Tiny:"
+      #       cpanm HTTP::Tiny~0.055
+      #       # these seem to have difficulty getting automatically installed as preqreqs in earlier perl versions, so might manually do them if I start supporting older perls again
+      #       # cpanm Config::Perl::V Encode::compat Math::Int64
+      # - name: Run Makefile.PL and get prereqs
+      #   run: |
+      #       Write-Host "`n--------------------`n# initially grab the prereqs for Makefile.PL"
+      #       cpanm --notest File::Which File::Spec File::Fetch Archive::Extract Archive::Zip
+      #       Write-Host "`n--------------------`n# intial run of Makefile.PL to see missing dependencies"
+      #       perl Makefile.PL
+      #       cpanm --notest --installdeps .
+      #       Write-Host "`n--------------------`n# re-run Makefile.PL after dependencies met"
+      #       perl Makefile.PL
       - name: save-cache
         id: perl-cache-save
         uses: actions/cache/save@v6
@@ -79,9 +103,6 @@ jobs:
                 c:\hostedtoolcache\windows\strawberry-perl
                 C:\hostedtoolcache\windows\perl
             key: ${{ steps.perl-cache-restore.outputs.cache-primary-key }}
-      - name: normal prove
+      - name: Run the perl-based tests ${{ env.VERBOSE_TESTING }}
         run: |
-          prove -l t
-      #- name: verbose prove (for debug)
-      #  run: |
-      #      prove -vl t
+          prove ${{ env.VERBOSE_TESTING }} -l t
