@@ -82,7 +82,7 @@ jobs:
 
       - name: Install W32MNPP
         run: |
-            cpanm Win32::Mechanize::NotepadPlusPlus
+            cpanm --verbose --notest Win32::Mechanize::NotepadPlusPlus
 
       - name: save-cache
         id: perl-cache-save
