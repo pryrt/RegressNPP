@@ -40,11 +40,11 @@ BEGIN {
     print {$fh} <<"EOT";
 <?xml version="1.0" encoding="UTF-8"?>
 <NotepadPlus>
-    <Session activeView="0">
-        <mainView activeIndex="0">
+    <Session activeView="1">
+        <mainView activeIndex="0" />
+        <subView activeIndex="0">
             <File firstVisibleLine="0" xOffset="0" scrollWidth="23" startPos="3" endPos="3" selMode="0" offset="0" wrapCount="1" lang="None (Normal Text)" encoding="-1" userReadOnly="no" filename="new 1" backupFilePath="$backupFilename" originalFileLastModifTimestamp="0" originalFileLastModifTimestampHigh="0" tabColourId="-1" RTL="no" tabPinned="no" mapFirstVisibleDisplayLine="-1" mapFirstVisibleDocLine="-1" mapLastVisibleDocLine="-1" mapNbLine="-1" mapHigherPos="-1" mapWidth="-1" mapHeight="-1" mapKByteInDoc="512" mapWrapIndentMode="-1" mapIsWrap="no" />
-        </mainView>
-        <subView activeIndex="0" />
+        </subView>
     </Session>
 </NotepadPlus>
 EOT
