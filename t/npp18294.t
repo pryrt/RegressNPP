@@ -73,15 +73,18 @@ notepad->menuCommand($NPPIDM{IDM_FILE_EXIT});
 sleep(2);
 
 # remove the temporary config
-unlink (
+for my $path (
     "$settingsDir/config.xml",
     "$settingsDir/contextMenu.xml",
     "$settingsDir/langs.xml",
     "$settingsDir/session.xml.inCaseOfCorruption.bak",
     "$settingsDir/shortcuts.xml",
-    "$settingsDir/stylers.xml"
-);
-rmdir "$settingsDir/themes";
+    "$settingsDir/stylers.xml",
+    "$settingsDir/themes"
+) {
+    unlink $path if -f $path;
+    rmdir $path if -d $path;
+}
 
 # done
 done_testing();
